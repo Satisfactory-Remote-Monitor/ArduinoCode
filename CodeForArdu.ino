@@ -32,18 +32,23 @@ void setup() {
   pinMode(Led2, OUTPUT);
   pinMode(Led3, OUTPUT);
   pinMode(Led4, OUTPUT);
+  for (int i = 1; i < 5; i++){
+      SetStatus(i, ReadBaseData(i));
+    }
 
 }
 
 void loop() {
-  static int BaseDataTimer = 0;
+  /*static int BaseDataTimer = 0;
   if (BaseDataTimer >= 100){
     for (int i = 1; i < 5; i++){
       SetStatus(i, ReadBaseData(i));
     }
-  }
+  }*/
   DynInd();
-  BaseDataTimer++;
+  //BaseDataTimer++;
+  
+  
 
 
 }
@@ -54,11 +59,17 @@ void SetStatus(int LedNum, int Status){
         LedColor[LedNum - 1][0] = 0;
         LedColor[LedNum - 1][1]= 255;
         LedColor[LedNum - 1][2] = 0;
+        Serial.print("LED");
+        Serial.print(LedNum);
+        Serial.println(" Setted GREEN");
         break;
       case 0:
         LedColor[LedNum - 1][0] = 255;
         LedColor[LedNum - 1][1] = 0;
         LedColor[LedNum - 1][2] = 0;
+        Serial.print("LED");
+        Serial.print(LedNum);
+        Serial.println(" Setted RED");
         break;
     }
 }
@@ -69,8 +80,8 @@ void DynInd(){
   for (int Counter = 0; Counter < 4; Counter++) { // цикл со счетчиком
     // записываем значения цветов
     analogWrite(RedPin, LedColor[Counter][0]);
-    analogWrite(GreenPin, LedColor[Counter][0]);
-    analogWrite(BluePin, LedColor[Counter][0]);
+    analogWrite(GreenPin, LedColor[Counter][1]);
+    analogWrite(BluePin, LedColor[Counter][2]);
 
     // подаем на нужный светодиод землю (включаем его)
     digitalWrite(port[Counter], LOW);
@@ -87,9 +98,14 @@ void DynInd(){
 
 
 int ReadBaseData(int LedNum){
+    String RequestStr = "";
+    String AnswerStr = "";
+
     Serial.print(LedNum);
     Serial.println(2);
-    while (Serial.peek() == 50){
-      Serial.println(3);
-    }
+    RequestStr.trim();
+    while (Serial.available() == 0) {}
+    AnswerStr = Serial.readString();
+    AnswerStr.trim();
+    return AnswerStr.toInt();
 }
