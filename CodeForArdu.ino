@@ -6,6 +6,34 @@
 #define RedPin 9
 #define GreenPin 10
 #define BluePin 11
+#define IrPin 12
+
+#define Ir1 3125149440
+#define Ir2 3108437760
+#define Ir3 3091726080
+#define Ir4 3141861120
+#define Ir5 3208707840
+#define Ir6 3158572800
+#define Ir7 4161273600
+#define Ir8 3927310080
+#define Ir9 4127850240
+#define Ir0 3860463360
+#define IrStar 3910598400
+#define IrResh 4061003520
+#define IrUp 3927310080
+#define IrDown 4127850240
+#define IrRight 3860463360
+#define IrLeft 3910598400
+#define IrCent 4061003520
+
+
+#include <IRremote.h>
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x38, 20, 4);
+IRrecv irrecv(IrPin);
+decode_results results;
 
 /*
 pin 2 - led 1
@@ -22,8 +50,17 @@ pin 8 - led 4
   {0, 0, 0}
 };
 
+int ExtraInfo[4][4] =
+{
+  {120, -1, 1440,2160},
+  {320, -1, 960, 1080},
+  {540, -1, 780, 7850},
+  {100, 990, 340, -1}
+};
+
 void setup() {
   Serial.begin(9600);
+  lcd.init();
   pinMode(ZoomPin, OUTPUT);
   pinMode(RedPin, OUTPUT);
   pinMode(GreenPin, OUTPUT);
@@ -32,25 +69,35 @@ void setup() {
   pinMode(Led2, OUTPUT);
   pinMode(Led3, OUTPUT);
   pinMode(Led4, OUTPUT);
-  for (int i = 1; i < 5; i++){
-      SetStatus(i, ReadBaseData(i));
-    }
-
+  pinMode(IrPin, INPUT);
+  lcd.backlight();
+    
 }
 
 void loop() {
-  /*static int BaseDataTimer = 0;
-  if (BaseDataTimer >= 100){
+  static int PlantChosen = 1;
+  static int ReqestedPlant = 1;
+  if(1==1 || PlantChosen != ReqestedPlant){ // 1 == 1 это временно, там будет таймер
+    ReqestedPlant = PlantChosen;
+    for(int i = 1; i < 5; i++){
+      if (ExtraInfo[ReqestedPlant-1][i - 1] != -1){
+        ExtraInfo[ReqestedPlant-1][i - 1] = ReadExtraData(ReqestedPlant, i); 
+      }
+    }
+  }
+  /*if(1==1){
     for (int i = 1; i < 5; i++){
       SetStatus(i, ReadBaseData(i));
     }
   }*/
-  DynInd();
-  //BaseDataTimer++;
-  
-  
+  //DynInd();
 
-
+  for (int i = 1; i < 5; i++){
+    PrintInfo(i);
+    delay(7000);
+    lcd.clear();
+  }
+   
 }
 
 void SetStatus(int LedNum, int Status){
@@ -98,14 +145,96 @@ void DynInd(){
 
 
 int ReadBaseData(int LedNum){
-    String RequestStr = "";
     String AnswerStr = "";
 
-    Serial.print(LedNum);
-    Serial.println(2);
-    RequestStr.trim();
+    Serial.print(1);
+    Serial.println(LedNum);
     while (Serial.available() == 0) {}
     AnswerStr = Serial.readString();
     AnswerStr.trim();
     return AnswerStr.toInt();
+}
+
+int ReadExtraData(int PlantNum, int DataType){
+    String AnswerStr = "";
+
+    Serial.print(2);
+    Serial.print(PlantNum);
+    Serial.println(DataType);
+    while (Serial.available() == 0) {}
+    AnswerStr = Serial.readString();
+    AnswerStr.trim();
+    return AnswerStr.toInt();
+}
+
+int PlantChoosing(){
+  if (irrecv.decode()) {
+    switch (irrecv.decodedIRData.decodedRawData){
+      case Ir1: irrecv.resume(); Serial.println(1); return 1; break;
+      case Ir2: irrecv.resume(); Serial.println(2); return 2; break;
+      case Ir3: irrecv.resume(); Serial.println(3); return 3; break;
+      case Ir4: irrecv.resume(); Serial.println(4); return 4; break;
+      
+      
+      default: 
+      Serial.println(-1);
+        return -1;
+    }
+  }
+  else{
+    return 0;
+  }
+}
+
+void PrintInfo(int PlantNum){
+  switch (PlantNum){
+      case 1:  
+        lcd.print("     IRON PLANT     ");
+        lcd.print("Parts prod.:");
+        lcd.print(ExtraInfo[PlantNum - 1][3]);
+        lcd.print(" PPM");
+        lcd.print("Energy cons.:");
+        lcd.print(ExtraInfo[PlantNum - 1][0]);
+        lcd.print(" MWH");
+        lcd.print("Parts cons.:");
+        lcd.print(ExtraInfo[PlantNum - 1][2]);
+        lcd.print(" PPM");
+        break;
+      case 2:
+        lcd.print("    COPPER PLANT    ");
+        lcd.print("Parts prod.:");
+        lcd.print(ExtraInfo[PlantNum - 1][3]);
+        lcd.print(" PPM");
+        lcd.print("Energy cons.:");
+        lcd.print(ExtraInfo[PlantNum - 1][0]);
+        lcd.print(" MWH");
+        lcd.print("Parts cons.:");
+        lcd.print(ExtraInfo[PlantNum - 1][2]);
+        lcd.print(" PPM");
+        break;
+      case 3:
+        lcd.print("     OIL  PLANT     ");
+        lcd.print("Parts prod.:");
+        lcd.print(ExtraInfo[PlantNum - 1][3]);
+        lcd.print(" PPM");
+        lcd.print("Energy cons.:");
+        lcd.print(ExtraInfo[PlantNum - 1][0]);
+        lcd.print(" MWH");
+        lcd.print("Parts cons.:");
+        lcd.print(ExtraInfo[PlantNum - 1][2]);
+        lcd.print(" PPM");
+        break;
+      case 4:
+        lcd.print("     COAL PLANT     ");
+        lcd.print("Energy cons.:");
+        lcd.print(ExtraInfo[PlantNum - 1][0]);
+        lcd.print(" MWH");
+        lcd.print("Energy prod.:");
+        lcd.print(ExtraInfo[PlantNum - 1][1]);
+        lcd.print(" MWH");
+        lcd.print("Parts cons.:");
+        lcd.print(ExtraInfo[PlantNum - 1][2]);
+        lcd.print(" PPM");
+        break;
+    }
 }
