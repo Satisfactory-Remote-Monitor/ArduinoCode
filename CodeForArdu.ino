@@ -1,3 +1,5 @@
+
+//Описываем порты
 #define Led1 2
 #define ZoomPin 3
 #define Led2 4
@@ -8,6 +10,7 @@
 #define BluePin 11
 #define IrPin 12
 
+//Описываем Кнопки пульта
 #define Ir1 3125149440
 #define Ir2 3108437760
 #define Ir3 3091726080
@@ -26,28 +29,34 @@
 #define IrLeft 3910598400
 #define IrCent 4061003520
 
+//Описываем задержки
+#define EXTRA_INFO_DELAY 3000
+#define BASE_INFO_DELAY 3000
+
 
 #include <IRremote.h>
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
+#include <TimerMs.h>
+#include <GyverOS.h>
 
 LiquidCrystal_I2C lcd(0x38, 20, 4);
 IRrecv irrecv(IrPin);
 decode_results results;
 
 /*
-pin 2 - led 1
-pin 4 - led 2
-pin 7 - led 3
-pin 8 - led 4
+LED 1 - железо 
+LED 2 - медь
+LED 3 - Нефть
+LED 4 - уголь
 */
 
  int LedColor[4][3] = 
 {
-  {0, 0, 0},
-  {0, 0, 0},
-  {0, 0, 0},
-  {0, 0, 0}
+  {255, 255, 255},
+  {0, 255, 0},
+  {255, 0, 0},
+  {0, 0, 255}
 };
 
 int ExtraInfo[4][4] =
@@ -75,9 +84,12 @@ void setup() {
 }
 
 void loop() {
-  static int PlantChosen = 1;
+  /*static int PlantChosen = 1;
   static int ReqestedPlant = 1;
-  if(1==1 || PlantChosen != ReqestedPlant){ // 1 == 1 это временно, там будет таймер
+  static uint32_t timer1;
+  static uint32_t timer2;
+  if(millis() - timer1 >= EXTRA_INFO_DELAY || PlantChosen != ReqestedPlant){
+    timer1 = millis(); 
     ReqestedPlant = PlantChosen;
     for(int i = 1; i < 5; i++){
       if (ExtraInfo[ReqestedPlant-1][i - 1] != -1){
@@ -85,21 +97,28 @@ void loop() {
       }
     }
   }
-  /*if(1==1){
+  if(millis() - timer1 >= BASE_INFO_DELAY){
+    timer2 = millis();
     for (int i = 1; i < 5; i++){
       SetStatus(i, ReadBaseData(i));
     }
-  }*/
-  //DynInd();
+  }
+  Zummer();*/
+  DynInd();
 
-  for (int i = 1; i < 5; i++){
+  /*for (int i = 1; i < 5; i++){
     PrintInfo(i);
     delay(7000);
     lcd.clear();
-  }
+  }*/
    
 }
 
+void Zummer(){
+  if(LedColor[1][0] == 255 || LedColor[1][1] == 255 || LedColor[1][2] == 255){tone(ZoomPin, 4500);}
+  if(LedColor[0][0] == 255 && LedColor[0][1] == 255 && LedColor[0][2] == 255) {noTone(ZoomPin);}
+
+}
 void SetStatus(int LedNum, int Status){
     switch (Status){
       case 1:  
