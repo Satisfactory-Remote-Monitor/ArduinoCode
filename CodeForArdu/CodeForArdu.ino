@@ -32,6 +32,8 @@
 //Описываем задержки
 #define EXTRA_INFO_DELAY 3000
 #define BASE_INFO_DELAY 3000
+#define KP_ROWS 4
+#define KP_COLS 4
 
 
 #include <IRremote.h>
@@ -39,10 +41,9 @@
 #include <LiquidCrystal_I2C.h>
 #include <TimerMs.h>
 #include <GyverOS.h>
+#include <SimpleKeypad.h>
 
-LiquidCrystal_I2C lcd(0x38, 20, 4);
-IRrecv irrecv(IrPin);
-decode_results results;
+
 
 /*
 LED 1 - железо 
@@ -50,6 +51,17 @@ LED 2 - медь
 LED 3 - Нефть
 LED 4 - уголь
 */
+
+// пины подключения (по порядку штекера)
+byte colPins[KP_COLS] = {42, 44, 46, 48};
+byte rowPins[KP_ROWS] = {34, 36, 38, 40};
+// массив имён кнопок
+char keys[KP_ROWS][KP_COLS] = {
+  {'0', '1', '2', '3'},
+  {'0', '1', '2', '3'},
+  {'0', '1', '2', '3'},
+  {'0', '1', '2', '3'}
+};
 
  int LedColor[4][3] = 
 {
@@ -64,8 +76,13 @@ int ExtraInfo[4][4] =
   {120, -1, 1440,2160},
   {320, -1, 960, 1080},
   {540, -1, 780, 7850},
-  {100, 990, 340, -1}
+  {100, 9900, 340, -1}
 };
+
+SimpleKeypad pad((char*)keys, rowPins, colPins, KP_ROWS, KP_COLS);
+LiquidCrystal_I2C lcd(0x38, 20, 4);
+IRrecv irrecv(IrPin);
+decode_results results;
 
 void setup() {
   Serial.begin(9600);
@@ -80,11 +97,16 @@ void setup() {
   pinMode(Led4, OUTPUT);
   pinMode(IrPin, INPUT);
   lcd.backlight();
+  Serial.print("BASE_INFO_DELAY ");
+  Serial.println(BASE_INFO_DELAY);
+  Serial.print("EXTRA_INFO_DELAY ");
+  Serial.println(EXTRA_INFO_DELAY);
+  Serial.print("HELLOWORLD");
     
 }
 
 void loop() {
-  /*static int PlantChosen = 1;
+  static int PlantChosen = 1;
   static int ReqestedPlant = 1;
   static uint32_t timer1;
   static uint32_t timer2;
@@ -103,20 +125,14 @@ void loop() {
       SetStatus(i, ReadBaseData(i));
     }
   }
-  Zummer();*/
-  DynInd();
-
-  /*for (int i = 1; i < 5; i++){
-    PrintInfo(i);
-    delay(7000);
-    lcd.clear();
-  }*/
-   
+  Zummer();
+  DynInd();  
+  PlantChosen = PlantChoosing(); 
 }
 
 void Zummer(){
-  if(LedColor[1][0] == 255 || LedColor[1][1] == 255 || LedColor[1][2] == 255){tone(ZoomPin, 4500);}
-  if(LedColor[0][0] == 255 && LedColor[0][1] == 255 && LedColor[0][2] == 255) {noTone(ZoomPin);}
+  if(LedColor[0][0] == 255 || LedColor[1][0] == 255 || LedColor[2][0] == 255 || LedColor[3][0] == 255){tone(ZoomPin, 4500);}
+  if(LedColor[0][1] == 255 && LedColor[1][1] == 255 && LedColor[2][1] == 255 && LedColor[3][1] == 255) {noTone(ZoomPin);}
 
 }
 void SetStatus(int LedNum, int Status){
@@ -187,21 +203,14 @@ int ReadExtraData(int PlantNum, int DataType){
 }
 
 int PlantChoosing(){
-  if (irrecv.decode()) {
-    switch (irrecv.decodedIRData.decodedRawData){
-      case Ir1: irrecv.resume(); Serial.println(1); return 1; break;
-      case Ir2: irrecv.resume(); Serial.println(2); return 2; break;
-      case Ir3: irrecv.resume(); Serial.println(3); return 3; break;
-      case Ir4: irrecv.resume(); Serial.println(4); return 4; break;
-      
-      
-      default: 
-      Serial.println(-1);
-        return -1;
+  char key = pad.getKey();
+  if (key) {
+    switch (int)key{
+      case 0: return(0); break;
+      case 1: return(1); break;
+      case 2: return(2); break;
+      case 3: return(3); break;
     }
-  }
-  else{
-    return 0;
   }
 }
 
@@ -248,7 +257,7 @@ void PrintInfo(int PlantNum){
         lcd.print("Energy cons.:");
         lcd.print(ExtraInfo[PlantNum - 1][0]);
         lcd.print(" MWH");
-        lcd.print("Energy prod.:");
+        lcd.print("Energy prod:");
         lcd.print(ExtraInfo[PlantNum - 1][1]);
         lcd.print(" MWH");
         lcd.print("Parts cons.:");
